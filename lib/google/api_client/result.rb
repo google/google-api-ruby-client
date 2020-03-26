@@ -125,7 +125,7 @@ module Google
       # @return [TrueClass, FalseClass]
       #   true if body can be parsed
       def data?
-        !(self.body.nil? || self.body.empty? || self.media_type != 'application/json')
+        !(self.body.nil? || self.body.empty?)
       end
       
       ##
@@ -140,7 +140,7 @@ module Google
             media_type = self.media_type
             data = self.body
             case media_type
-            when 'application/json'
+            when 'application/json', 'text/html'
               data = MultiJson.load(data)
               # Strip data wrapper, if present
               data = data['data'] if data.has_key?('data')
