@@ -264,6 +264,38 @@ you're building an application that uses Google Compute Engine.
 
 For per-user authorization, use [Signet](https://github.com/google/signet) to obtain user authorization.
 
+### Authorization without Signet
+
+If you prefer to not use Signet, the `authorization` only needs to respond to `token` and `apply!`. Here's a simple adapter:
+
+```ruby
+class AccessToken
+  attr_reader :token
+  def initialize(token)
+    @token = token
+  end
+
+  def apply!(headers)
+    headers['Authorization'] = "Bearer #{@token}"
+  end
+end
+```
+
+### Authorization with OAuth2
+
+If you're using [`oauth2`](https://github.com/oauth-xx/oauth2), you can simply mixin the `apply!` method.
+
+```ruby
+module GoogleAuthorizationOAuth2AccessTokenPatch
+  def apply!(headers)
+    headers['Authorization'] = "Bearer #{token}"
+  end
+end
+
+# somewhere that's meaningful...
+OAuth2::AccessToken.include GoogleAuthorizationOAuth2AccessTokenPatch
+```
+
 ### Passing authorization to requests
 
 Authorization can be specified for the entire client, for an individual service instance, or on a per-request basis.
