@@ -40,7 +40,7 @@ Learn how to use the Google API Client Library for Ruby with these guides:
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'google-api-client', '~> 0.34'
+gem 'google-api-client', '~> 0.39.5'
 
 ```
 
