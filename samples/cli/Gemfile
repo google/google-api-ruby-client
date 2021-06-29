@@ -13,7 +13,7 @@ gem 'google-apis-translate_v2', '~> 0.1'
 gem 'google-apis-vision_v1', '~> 0.1'
 gem 'google-apis-youtube_v3', '~> 0.1'
 
-gem 'thor', '~> 0.19'
+gem 'thor', '~> 1.0'
 gem 'os', '~> 0.9'
 gem 'rmail', '~> 1.1'
 gem 'dotenv'
