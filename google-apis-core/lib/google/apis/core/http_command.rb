@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require 'opentelemetry'
 require 'addressable/uri'
 require 'addressable/template'
 require 'google/apis/options'
@@ -27,6 +28,7 @@ module Google
       class HttpCommand
         include Logging
 
+        OTEL_TRACER = OpenTelemetry.tracer_provider.tracer('Google::Apis::Core::HttpCommand', Google::Apis::Core::VERSION)
         RETRIABLE_ERRORS = [Google::Apis::ServerError, Google::Apis::RateLimitError, Google::Apis::TransmissionError]
 
         begin
@@ -99,20 +101,23 @@ module Google
           prepare!
           opencensus_begin_span
           begin
-            Retriable.retriable tries: options.retries + 1,
-                                base_interval: 1,
-                                multiplier: 2,
-                                on: RETRIABLE_ERRORS do |try|
-              # This 2nd level retriable only catches auth errors, and supports 1 retry, which allows
-              # auth to be re-attempted without having to retry all sorts of other failures like
-              # NotFound, etc
-              auth_tries = (try == 1 && authorization_refreshable? ? 2 : 1)
-              Retriable.retriable tries: auth_tries,
-                                  on: [Google::Apis::AuthorizationError, Signet::AuthorizationError, Signet::RemoteServerError, Signet::UnexpectedStatusError],
-                                  on_retry: proc { |*| refresh_authorization } do
-                execute_once(client).tap do |result|
-                  if block_given?
-                    yield result, nil
+            url_host = url.host.to_s
+            OTEL_TRACER.in_span(url_host) do
+              Retriable.retriable tries: options.retries + 1,
+                                  base_interval: 1,
+                                  multiplier: 2,
+                                  on: RETRIABLE_ERRORS do |try|
+                # This 2nd level retriable only catches auth errors, and supports 1 retry, which allows
+                # auth to be re-attempted without having to retry all sorts of other failures like
+                # NotFound, etc
+                auth_tries = (try == 1 && authorization_refreshable? ? 2 : 1)
+                Retriable.retriable tries: auth_tries,
+                                    on: [Google::Apis::AuthorizationError, Signet::AuthorizationError, Signet::RemoteServerError, Signet::UnexpectedStatusError],
+                                    on_retry: proc { |*| refresh_authorization } do
+                  execute_once(client).tap do |result|
+                    if block_given?
+                      yield result, nil
+                    end
                   end
                 end
               end

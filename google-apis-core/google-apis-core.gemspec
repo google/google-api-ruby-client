@@ -19,6 +19,7 @@ Gem::Specification.new do |gem|
   gem.require_paths = ["lib"]
 
   gem.required_ruby_version = '>= 2.5'
+  gem.add_runtime_dependency "opentelemetry-api", '~> 1.0.0.rc1'
   gem.add_runtime_dependency "representable", "~> 3.0"
   gem.add_runtime_dependency "retriable", ">= 2.0", "< 4.a"
   gem.add_runtime_dependency "addressable", "~> 2.5", ">= 2.5.1"

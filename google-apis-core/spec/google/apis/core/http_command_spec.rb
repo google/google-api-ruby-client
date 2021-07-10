@@ -394,6 +394,44 @@ RSpec.describe Google::Apis::Core::HttpCommand do
     end
   end if Google::Apis::Core::HttpCommand::OPENCENSUS_AVAILABLE
 
+  context('with opentelemetry sdk configured') do
+    require 'opentelemetry-sdk'
+
+    EXPORTER = OpenTelemetry::SDK::Trace::Export::InMemorySpanExporter.new
+    SPAN_PROCESSOR = OpenTelemetry::SDK::Trace::Export::SimpleSpanProcessor.new(EXPORTER)
+
+    OpenTelemetry::SDK.configure do |c|
+      c.add_span_processor SPAN_PROCESSOR
+    end
+
+    let(:span) { EXPORTER.finished_spans.first }
+
+    before { EXPORTER.reset }
+
+    it 'should create an OpenTelemetry span for a successful call' do
+      stub_request(:get, 'https://www.googleapis.com/zoo/animals').to_return(status: [200, ''], body: "Hello world")
+      command = Google::Apis::Core::HttpCommand.new(:get, 'https://www.googleapis.com/zoo/animals')
+      command.execute(client)
+
+      expect(span.name).to eq('www.googleapis.com')
+      expect(span.status).to be_ok
+      expect(span.instrumentation_library.name).to eq('Google::Apis::Core::HttpCommand')
+      expect(span.instrumentation_library.version).to eq(Google::Apis::Core::VERSION)
+    end
+
+    it 'should create an OpenTelemetry span for a call failure' do
+      stub_request(:get, 'https://www.googleapis.com/zoo/animals').to_return(status: [403, ''])
+      command = Google::Apis::Core::HttpCommand.new(:get, 'https://www.googleapis.com/zoo/animals')
+      expect { command.execute(client) }.to raise_error(Google::Apis::ClientError)
+
+      expect(span.name).to eq('www.googleapis.com')
+      expect(span.status).not_to be_ok
+      expect(span.events.first.attributes['exception.type']).to eq('Google::Apis::ClientError')
+      expect(span.events.first.attributes['exception.message']).to eq('Invalid request')
+      expect(span.events.first.attributes['exception.stacktrace']).not_to be_empty
+    end
+  end
+
   it 'should send repeated query parameters' do
     stub_request(:get, 'https://www.googleapis.com/zoo/animals?a=1&a=2&a=3')
       .to_return(status: [200, ''])
