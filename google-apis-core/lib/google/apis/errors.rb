@@ -24,7 +24,7 @@ module Google
         @cause = nil
 
         if err.respond_to?(:backtrace)
-          super(err.message)
+          super("caused by #{err.class}: #{err.message}")
           @cause = err
         else
           super(err.to_s)

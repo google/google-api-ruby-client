@@ -30,10 +30,11 @@ RSpec.describe Google::Apis::Error do
       context 'first arg responds to :backtrace' do
         let(:error) { double }
 
-        it 'creates a instance of Error with message' do
+        it 'creates a instance of Error with modified message' do
           allow(error).to receive(:respond_to?).with(:backtrace) { true }
           allow(error).to receive(:message) { 'error message' }
-          expect(subject.message).to eq 'error message'
+		  allow(error).to receive(:class) { 'TestError' }
+          expect(subject.message).to eq 'caused by TestError: error message'
         end
       end
     end
